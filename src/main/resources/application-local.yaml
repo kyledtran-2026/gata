@@ -1,0 +1,118 @@
+# This file is used for local development only.
+spring:
+  application:
+    name: gata
+  datasource:
+    url: jdbc:postgresql://localhost:5432/gata
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      idle-timeout: 60000
+      minimum-idle: 10
+      max-lifetime: 120000
+      maximum-pool-size: 30
+  docker:
+    compose:
+      file: deploy/compose.yaml
+      lifecycle-management: start-only
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: none
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    baseline-version: 0
+    locations: classpath:db/migration
+  servlet:
+    multipart:
+      max-file-size: 500MB
+      max-request-size: 500MB
+      file-size-threshold: 2MB
+      location: /tmp/gata/ingest/download
+
+server:
+  port: 8908
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,flyway
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  pattern:
+    console: "%d{ISO8601} %highlight(%-5level) [%thread] %cyan(%logger{36}):%L - %msg%n"
+  #    file: "%d{ISO8601} %-5level [%thread] %logger{36}:%L - %msg%n"
+  level:
+    root: INFO
+    # Quiet Hibernate SQL noise
+    org.hibernate: WARN
+    org.hibernate.SQL: WARN
+    org.hibernate.orm.jdbc.bind: WARN          # parameters
+    org.hibernate.type.descriptor.sql.BasicBinder: WARN
+    org.springframework.orm.jpa: WARN
+
+app-thread-service:
+  core-pool-size: 10
+  max-pool-size: 20
+  await-termination-in-sec: 60
+
+minio-service:
+  access-key: minio
+  secret-key: minio123
+  minio-url: http://localhost:9000
+  bucket: gata
+  notify-on-base-folder: true
+
+mineru-service:
+  base-url: http://mineru-api-gata:8000
+  # GPU parses can take several minutes. Keep this above your worst-case PDF.
+  connect-timeout: 10
+  read-timeout: 180
+  # Polling used by the async /tasks flow (in seconds)
+  poll-interval: 5
+  poll-timeout: 2700
+  default-lang: en
+  default-backend: pipeline
+  default-parse-method: auto
+
+ingestion-service:
+  minio-upload-folder: upload
+  minio-output-folder: rag
+
+pipeline-service:
+  thread-pool-settings:
+    core-pool-size: 1
+    max-pool-size: 1
+    await-termination-in-sec: 120
+
+llm:
+  chat:
+#    url: http://10.0.5.111:8789/v1 # VPN - need to load model
+    url: http://localhost:8789/v1
+    model: gemma-4-31B-it-Q3_K_M
+    temperature: 0.0
+    top-p: 1
+    max-tokens: 8192
+  vision:
+#    url: http://10.0.5.111:8789/v1  # VPN - need to load model
+    url: http://localhost:8789/v1
+    model: gemma-4-31B-it-Q3_K_M
+    temperature: 0.0
+    top-p: 1
+    max-tokens: 8192
+  embedding:
+#    url: http://10.0.5.111:8789/v1 # VPN - need to load model
+    url: http://localhost:8789/v1
+    model: qwen-3-embedding-4b
+    dimension: 1024
+    max-retries: 3

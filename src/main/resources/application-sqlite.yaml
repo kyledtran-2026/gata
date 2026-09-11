@@ -1,0 +1,8 @@
+spring:
+  datasource:
+    url: jdbc:sqlite:gata.db
+    driver-class-name: org.sqlite.JDBC
+  jpa:
+    database-platform: org.hibernate.community.dialect.SQLiteDialect
+    hibernate:
+      ddl-auto: update # Often preferred for local SQLite testing

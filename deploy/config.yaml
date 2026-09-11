@@ -1,0 +1,43 @@
+healthCheckTimeout: 120
+globalTTL: 600
+includeAliasesInList: true
+
+models:
+  gemma-3-1b-it:
+    cmd: >
+      llama-server
+      --host 0.0.0.0
+      --port ${PORT}
+      --model /models/gemma3/gemma-3-1b-it-Q4_K_M.gguf
+      --mmproj /models/gemma3/gemma-3-mmproj-BF16.gguf
+      --n-gpu-layers 99
+      --ctx-size 8192
+      --parallel 1
+      --cont-batching
+
+  qwen-3.5-9b:
+    cmd: >
+      llama-server
+      --host 0.0.0.0
+      --port ${PORT}
+      --model /models/qwen3/Qwen3.5-9B-Q8_0.gguf
+      --n-gpu-layers 99
+      --ctx-size 8192
+      --parallel 1
+      --cont-batching
+
+  qwen-3-embedding-4b:
+    cmd: >
+      llama-server
+      --host 0.0.0.0
+      --port ${PORT}
+      --model /models/qwen3/Qwen3-Embedding-4B-Q4_K_M.gguf
+      --n-gpu-layers 99
+      --ctx-size 8192
+      --batch-size 512
+      --ubatch-size 512
+      --parallel 1
+      --cont-batching
+      --embeddings
+      --pooling last
+    ttl: -1
