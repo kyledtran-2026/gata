@@ -74,12 +74,13 @@ minio-service:
   notify-on-base-folder: true
 
 mineru-service:
-  base-url: http://mineru-api-gata:8000
+#  base-url: http://mineru-api-gata:8000
+  base-url: http://10.0.5.111:8000  # AI machine
   # GPU parses can take several minutes. Keep this above your worst-case PDF.
   connect-timeout: 10
   read-timeout: 180
   # Polling used by the async /tasks flow (in seconds)
-  poll-interval: 5
+  poll-interval: 10
   poll-timeout: 2700
   default-lang: en
   default-backend: pipeline

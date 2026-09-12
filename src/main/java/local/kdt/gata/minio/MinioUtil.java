@@ -7,7 +7,7 @@ import io.minio.errors.MinioException;
 import io.minio.messages.DeleteRequest;
 import io.minio.messages.DeleteResult;
 import io.minio.messages.Item;
-import local.kdt.gata.common.util.ContentTypeUtils;
+import local.kdt.gata.common.util.ContentTypeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.multipart.MultipartFile;
@@ -190,7 +190,7 @@ public class MinioUtil {
     }
 
     public static void putBytesIntoBucketFolder(MinioClient minioClient, String bucket, String key, byte[] data) throws Exception {
-        String contentType = ContentTypeUtils.fromFilename(key);
+        String contentType = ContentTypeUtil.fromFilename(key);
         minioClient.putObject(
                 PutObjectArgs.builder()
                         .bucket(bucket)
@@ -202,7 +202,7 @@ public class MinioUtil {
 
 
     public static void putFileIntoBucketFolder(MinioClient minioClient, String bucket, String key, File file) throws Exception {
-        String contentType = ContentTypeUtils.fromFilename(file.getName());
+        String contentType = ContentTypeUtil.fromFilename(file.getName());
         byte[] fileContent = Files.readAllBytes(file.toPath());
         minioClient.putObject(
                 PutObjectArgs.builder()
@@ -216,7 +216,7 @@ public class MinioUtil {
     public static void putFileIntoBucketFolder(MinioClient minioClient, String bucket, String key, MultipartFile file) throws Exception {
         String contentType = file.getContentType();
         if ( contentType==null || contentType.isBlank() )
-            contentType = ContentTypeUtils.fromFilename(file.getOriginalFilename());
+            contentType = ContentTypeUtil.fromFilename(file.getOriginalFilename());
         try (InputStream stream = file.getInputStream()) {
             minioClient.putObject(
                     PutObjectArgs.builder()

@@ -4,7 +4,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
-public final class ContentTypeUtils {
+public final class ContentTypeUtil {
 
     private static final String DEFAULT = "application/octet-stream";
 
@@ -47,7 +47,7 @@ public final class ContentTypeUtils {
             Map.entry("avi", "video/x-msvideo")
     );
 
-    private ContentTypeUtils() {}
+    private ContentTypeUtil() {}
 
     public static String fromFilename(String filename) {
         return fromExtension(extensionOf(filename)).orElse(DEFAULT);

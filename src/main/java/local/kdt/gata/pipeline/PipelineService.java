@@ -1,9 +1,11 @@
 package local.kdt.gata.pipeline;
 
 import com.google.common.eventbus.Subscribe;
+import io.minio.StatObjectResponse;
 import jakarta.annotation.PostConstruct;
 import local.kdt.gata.common.threadpool.ThreadPoolFactory;
 import local.kdt.gata.common.threadpool.ThreadPoolService;
+import local.kdt.gata.common.util.FileUtil;
 import local.kdt.gata.event.EventService;
 import local.kdt.gata.ingestion.model.Ingest;
 import local.kdt.gata.ingestion.model.IngestStatus;
@@ -15,6 +17,11 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.JsonNode;
 
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.concurrent.*;
 
 @Service
@@ -62,11 +69,20 @@ public class PipelineService {
             String filename = ingest.getFilename();;
             try {
                 LOG.info("call start processing {}", filename);
-                String taskId = mineruService.asyncSubmit(ingest.getS3Folder(), filename);
+                StatObjectResponse stat = minioService.getObjectStat(ingest.getS3Folder(), filename);
+                InputStream inputStream = minioService.getObjectStream(ingest.getS3Folder(), filename);
+                String taskId = mineruService.asyncSubmit(inputStream, filename, stat.contentType(), stat.size());
                 String status = mineruService.waitUntilCompleted(taskId);
-                if ( status.equals(""))
+                if ( status.equals("completed")) {
+                    LOG.info("call mineru completed {}", filename);
+                    byte[] zipBytes = mineruService.resultZip(taskId);
+                    String filenameNoExt = FileUtil.getFileNameWithoutExtension(filename);
+                    String key = ingest.getS3Folder()+filenameNoExt+".zip";
+                    LOG.info("call mineru to minio {}", key);
+                    minioService.putObject(key, zipBytes);
+                }
             } catch (Exception ex) {
-                LOG.error("call processing failed for {}", filename);
+                LOG.error("call processing failed for {}", filename, ex);
             }
             return null;
         }
