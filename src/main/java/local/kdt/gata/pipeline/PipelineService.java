@@ -3,9 +3,11 @@ package local.kdt.gata.pipeline;
 import com.google.common.eventbus.Subscribe;
 import io.minio.StatObjectResponse;
 import jakarta.annotation.PostConstruct;
+import jakarta.validation.constraints.NotNull;
 import local.kdt.gata.common.threadpool.ThreadPoolFactory;
 import local.kdt.gata.common.threadpool.ThreadPoolService;
 import local.kdt.gata.common.util.FileUtil;
+import local.kdt.gata.common.util.ZipBytesUtil;
 import local.kdt.gata.event.EventService;
 import local.kdt.gata.ingestion.model.Ingest;
 import local.kdt.gata.ingestion.model.IngestStatus;
@@ -15,13 +17,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.stereotype.Service;
-import tools.jackson.databind.JsonNode;
 
 import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
+import java.util.Map;
 import java.util.concurrent.*;
 
 @Service
@@ -57,6 +55,17 @@ public class PipelineService {
         threadPoolService.submitTasks(new PipelineTask(ingest));
     }
 
+    public static void unzipIntoMinio(MinioService minioService, @NotNull String destFolder, byte[] zipBytes, String rmBasePath)
+            throws Exception {
+        Map<String, byte[]> files = ZipBytesUtil.unzip(zipBytes);
+        for (Map.Entry<String, byte[]> e : files.entrySet()) {
+            String zipEntryPath = e.getKey().replace(rmBasePath, "");
+            String key = destFolder + zipEntryPath;
+            String safeKey = MinioService.sanitizekey(key);
+            minioService.putObject(safeKey, e.getValue());
+        }
+    }
+
     class PipelineTask implements Callable {
         private Ingest ingest;
 
@@ -77,19 +86,19 @@ public class PipelineService {
                     LOG.info("call mineru completed {}", filename);
                     byte[] zipBytes = mineruService.resultZip(taskId);
                     String filenameNoExt = FileUtil.getFileNameWithoutExtension(filename);
-                    String key = ingest.getS3Folder()+filenameNoExt+".zip";
-                    LOG.info("call mineru to minio {}", key);
-                    minioService.putObject(key, zipBytes);
+                    String removeBasePath = filenameNoExt + "/auto/";
+                    // Debug to output the zip file
+//                    String key = ingest.getS3Folder()+filenameNoExt+".zip";
+//                    LOG.info("call mineru to minio {}", key);
+//                    minioService.putObject(key, zipBytes);
+                    unzipIntoMinio(minioService, ingest.getS3Folder(), zipBytes, removeBasePath);
                 }
             } catch (Exception ex) {
                 LOG.error("call processing failed for {}", filename, ex);
             }
             return null;
         }
-
-        private static String text(JsonNode n, String field) {
-            JsonNode v = n.get(field);
-            return v == null || v.isNull() ? null : v.asText();
-        }
     }
+
+
 }

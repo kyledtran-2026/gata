@@ -73,6 +73,14 @@ public class MineruService {
                 .setMode(HttpMultipartMode.STRICT)
                 .addBinaryBody("files", fileBytes, ContentType.parse(contentType), filename)
                 .addTextBody("return_md", "true", ContentType.TEXT_PLAIN)
+                .addTextBody("return_images", "true", ContentType.TEXT_PLAIN)
+                .addTextBody("return_content_list", "true", ContentType.TEXT_PLAIN)
+                .addTextBody("response_format_zip", "true", ContentType.TEXT_PLAIN)
+                .addTextBody("return_original_file", "false", ContentType.TEXT_PLAIN)
+                .addTextBody("lang_list", "en", ContentType.TEXT_PLAIN)
+                .addTextBody("table_enable", "true", ContentType.TEXT_PLAIN)
+                .addTextBody("parse_method", "auto", ContentType.TEXT_PLAIN)
+                .addTextBody("backend", "pipeline", ContentType.TEXT_PLAIN)
                 .build();
 
         ByteArrayOutputStream buf = new ByteArrayOutputStream();

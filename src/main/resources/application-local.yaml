@@ -80,7 +80,7 @@ mineru-service:
   connect-timeout: 10
   read-timeout: 180
   # Polling used by the async /tasks flow (in seconds)
-  poll-interval: 10
+  poll-interval: 5
   poll-timeout: 2700
   default-lang: en
   default-backend: pipeline

@@ -8,7 +8,7 @@ public enum IngestStatus {
     CREATED_EMBEDDINGS(3, "Created embeddings"),
     CREATED_SUMMARIES(4, "Created summaries"),
     EXTRACTED_TABLES(5, "Extracted tables from text to DB"),
-    EXTRACTED_IMG_DESCR(5, "Extracted image description"),
+    EXTRACTED_IMG_DESCR(6, "Extracted image description"),
     COMPLETED(10,"PRAG data extraction completed"),
     FAILED(11,"Failed")
     ;
