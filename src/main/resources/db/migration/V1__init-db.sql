@@ -20,14 +20,15 @@ CREATE TABLE gata_ingest_status (
 );
 
 INSERT INTO gata_ingest_status(id, name, description)
-    VALUES (1, 'INGESTED', 'File ingested'),
-        (2, 'PARSED', 'File has been parsed to its individual components'),
-        (3, 'CREATED_EMBEDDINGS', 'Created embeddings'),
-        (4, 'CREATED_SUMMARIES', 'Created summary'),
-        (5, 'EXTRACTED_TABLES', 'Extracted tables from text to DB'),
-        (6, 'EXTRACTED_IMG_DESCR', 'Extracted image description'),
-        (10, 'COMPLETED', 'RAG data extraction completed'),
-        (11, 'FAILED', 'RAG data extraction failed');
+    VALUES (1, 'INGESTED', 'File ingested to S3'),
+        (2, 'CREATED_S3_FOLDER', 'Create S3 folder for document'),
+        (3, 'PARSED', 'Retrieve MinerU artifacts'),
+        (4, 'CREATED_EMBEDDINGS', 'Create embeddings'),
+        (5, 'CREATED_SUMMARIES', 'Create summaries'),
+        (6, 'CREATE_IMG_DESCR', 'Create image description'),
+        (7, 'EXTRACTED_TABLES', 'Extract tables from text and store into DB'),
+        (20, 'COMPLETED', 'RAG data extraction completed'),
+        (21, 'FAILED', 'RAG data extraction failed');
 
 CREATE TABLE gata_ingest_src (
     id          SMALLINT PRIMARY KEY,
@@ -39,9 +40,9 @@ INSERT INTO gata_ingest_src(id, name, description)
 VALUES (1, 'MINIO', 'File from Minio'),
        (2, 'REST', 'File from REST');
 
-CREATE TABLE gata_ingest (
+CREATE TABLE gata_ingestion (
     filename            TEXT PRIMARY KEY,
-    ingest_status       SMALLINT DEFAULT 1 REFERENCES gata_ingest_status(id) ON DELETE CASCADE,
+    status              SMALLINT DEFAULT 1 REFERENCES gata_ingest_status(id) ON DELETE CASCADE,
     ingest_src          SMALLINT DEFAULT 1 REFERENCES gata_ingest_src(id) ON DELETE CASCADE,
     failure_reason      TEXT,
     s3_folder           TEXT,
@@ -49,10 +50,10 @@ CREATE TABLE gata_ingest (
     completed_at        TIMESTAMPTZ
 );
 
-COMMENT ON TABLE gata_ingest IS 'Central registry of all ingested documents';
-COMMENT ON COLUMN gata_ingest.filename IS 'Filename of document during ingestion';
-COMMENT ON COLUMN gata_ingest.ingest_status IS 'The process status of the document';
-COMMENT ON COLUMN gata_ingest.failure_reason IS 'The failure reason why the document was not fully processed';
-COMMENT ON COLUMN gata_ingest.s3_folder IS 'The path/folder in the S3/Minio where the file is kept';
-COMMENT ON COLUMN gata_ingest.ingested_at IS 'When the file was ingested';
-COMMENT ON COLUMN gata_ingest.completed_at IS 'When the pipeline process completed/failed';
+COMMENT ON TABLE gata_ingestion IS 'Central registry of all ingested documents';
+COMMENT ON COLUMN gata_ingestion.filename IS 'Filename of document during ingestion';
+COMMENT ON COLUMN gata_ingestion.status IS 'The process status of the document';
+COMMENT ON COLUMN gata_ingestion.failure_reason IS 'The failure reason why the document was not fully processed';
+COMMENT ON COLUMN gata_ingestion.s3_folder IS 'The path/folder in the S3/Minio where the file is kept';
+COMMENT ON COLUMN gata_ingestion.ingested_at IS 'When the file was ingested';
+COMMENT ON COLUMN gata_ingestion.completed_at IS 'When the pipeline process completed/failed';

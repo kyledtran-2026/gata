@@ -1,18 +1,12 @@
 package local.kdt.gata.ingestion;
 
-import local.kdt.gata.ingestion.model.IngestSrc;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.io.FilenameUtils;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
-
-import java.time.Instant;
-import java.util.Map;
 
 @Validated
 @RestController
@@ -38,7 +32,7 @@ public class IngestionController {
 //                    .overwrite(overwrite == null ? false : overwrite)
 //                    .size(size)
 //                    .metadata(metadata).build();
-            String name = service.uploadFromRest(file);
+            String name = service.ingestFromRest(file);
             return ResponseEntity.ok("Upload "+name);
         } catch (Exception e) {
             e.printStackTrace();

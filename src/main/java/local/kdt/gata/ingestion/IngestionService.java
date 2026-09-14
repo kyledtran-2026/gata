@@ -3,14 +3,13 @@ package local.kdt.gata.ingestion;
 import jakarta.annotation.PostConstruct;
 import local.kdt.gata.common.util.FileUtil;
 import local.kdt.gata.event.EventService;
-import local.kdt.gata.ingestion.model.Ingest;
-import local.kdt.gata.ingestion.model.IngestRepository;
+import local.kdt.gata.ingestion.model.Ingestion;
 import local.kdt.gata.ingestion.model.IngestSrc;
-import local.kdt.gata.ingestion.model.IngestStatus;
+import local.kdt.gata.ingestion.model.IngestionRepository;
+import local.kdt.gata.ingestion.model.IngestionStatus;
 import local.kdt.gata.minio.BucketNotificationListener;
 import local.kdt.gata.minio.MinioService;
 import local.kdt.gata.minio.MinioUtil;
-import local.kdt.gata.minio.S3ObjectKeys;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -18,62 +17,35 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.time.Duration;
-import java.time.Instant;
-
 @Service
 @EnableConfigurationProperties(IngestionProperties.class)
 public class IngestionService implements BucketNotificationListener {
     private static final Logger LOG = LoggerFactory.getLogger(IngestionService.class);
 
     private final IngestionProperties properties;
-    private final IngestRepository repository;
+    private final IngestionRepository repository;
     private final EventService eventService;
     private final MinioService minioService;
 
-    public IngestionService(IngestionProperties properties, IngestRepository repository, EventService eventService,
+    public IngestionService(IngestionProperties properties, IngestionRepository repository, EventService eventService,
                             MinioService minioService) {
         this.properties = properties;
         this.repository = repository;
         this.eventService = eventService;
         this.minioService = minioService;
-        this.properties.setMinioUploadFolder(MinioUtil.conditionFolder(properties.getMinioUploadFolder()));
-        this.properties.setMinioOutputFolder(MinioUtil.conditionFolder(properties.getMinioOutputFolder()));
+        this.properties.setS3IngestFolder(MinioUtil.conditionFolder(properties.getS3IngestFolder()));
     }
 
     @PostConstruct
     public void init() {
         if ( minioService.isEnabled() ) {
             try {
-                minioService.ensureFolder(properties.getMinioUploadFolder());
-                minioService.ensureFolder(properties.getMinioOutputFolder());
-                minioService.registerListener(properties.getMinioUploadFolder(), this);
+                minioService.ensureFolder(properties.getS3IngestFolder());
+                minioService.registerListener(properties.getS3IngestFolder(), this);
             } catch (Exception e) {
                 throw new IllegalStateException("Failed to initialize MinIO bucket/folders", e);
             }
         }
-    }
-
-    public Ingest getIngestByFilename(String filename) {
-        return repository.getIngestByFilename(filename);
-    }
-
-    @Transactional
-    public Ingest addIngest(String filename, IngestSrc ingestSrc) {
-        System.out.println("ingestSrc="+ingestSrc);
-        repository.addIngest(filename, 1);
-        return repository.getIngestByFilename(filename);
-    }
-
-    @Transactional
-    public void updateIngest(Ingest ingeest) {
-        repository.updateIngest(ingeest.getFilename(), ingeest.getIngestStatus().getId(),
-                ingeest.getIngestSrc().getId(), ingeest.getFailureReason(), ingeest.getS3Folder(), ingeest.getCompletedAt());
-    }
-
-    @Transactional
-    public void deleteIngest(String filename) {
-        repository.deleteIngest(filename);
     }
 
     @Override
@@ -81,47 +53,41 @@ public class IngestionService implements BucketNotificationListener {
         if ( filename.startsWith(".") )
             return false;
         LOG.info("minioBucketNotification Folder={}, name={}, Size={}", folder, filename, objectSize);
-        Ingest ingest = repository.getIngestByFilename(filename);
-        try {
-            if (ingest != null) {
-                // delete existing entries and start over
-                if (Duration.between(ingest.getIngestedAt(), Instant.now()).getSeconds()>2 ) {
-                    LOG.info("minioBucketNotification delete previous entry: {}", filename);
-                    repository.deleteIngest(filename);
-                }
-            } else {
-                LOG.info("minioBucketNotification processing file: {}", filename);
-                ingest = addIngest(filename, IngestSrc.MINIO);
-            }
-
-            String directory = FileUtil.getFileNameWithoutExtension(S3ObjectKeys.toS3SafeFilename(filename));
-            directory = properties.getMinioOutputFolder()+directory+"/";
-            String key = directory + filename;
-            minioService.moveObject(properties.getMinioUploadFolder()+"/"+filename, key);
-            ingest.setS3Folder(directory);
-            updateIngest(ingest);
-            eventService.post(ingest);
-            return true;
-        } catch(Exception ex) {
-            LOG.error("minioBucketNotification thread", ex);
-            ingest.setIngestStatus(IngestStatus.FAILED);
-            ingest.setFailureReason(ex.getMessage());
-            ingest.setCompletedAt(Instant.now());
-            updateIngest(ingest);
-        }
-        return false;
+        Ingestion ingest = Ingestion.builder().filename(filename).s3Folder(folder).status(IngestionStatus.INGESTED).ingestSrc(IngestSrc.MINIO).build();
+        eventService.post(ingest);
+        return true;
     }
 
-    public String uploadFromRest(MultipartFile file) throws Exception {
+    public String ingestFromRest(MultipartFile file) throws Exception {
         String filename = FileUtil.getJustFilename(file.getOriginalFilename());
-        String key =  properties.getMinioUploadFolder()+filename;
-        LOG.info("uploadFromRest key={}", key);
-        Ingest ingest = repository.getIngestByFilename(filename);
-        if (ingest == null) {
-            ingest = addIngest(filename, IngestSrc.REST);
-        }
+        String key =  properties.getS3IngestFolder()+filename;
         minioService.putObject(key, file);
+        LOG.info("ingestFromRest key={}", key);
+        Ingestion ingest = Ingestion.builder().filename(filename).s3Folder(properties.getS3IngestFolder()).status(IngestionStatus.INGESTED).ingestSrc(IngestSrc.REST).build();
+        eventService.post(ingest);
         return filename;
+    }
+
+    public Ingestion getIngestByFilename(String filename) {
+        return repository.getProcessByFilename(filename);
+    }
+
+    @Transactional
+    public Ingestion addIngest(String filename, IngestSrc ingestSrc) {
+        System.out.println("ingestSrc="+ingestSrc);
+        repository.addPipeline(filename, 1);
+        return repository.getProcessByFilename(filename);
+    }
+
+    @Transactional
+    public void updateIngest(Ingestion ingeest) {
+        repository.updateIngest(ingeest.getFilename(), ingeest.getStatus().getId(),
+                ingeest.getIngestSrc().getId(), ingeest.getFailureReason(), ingeest.getS3Folder(), ingeest.getCompletedAt());
+    }
+
+    @Transactional
+    public void deleteIngest(String filename) {
+        repository.deletePipeline(filename);
     }
 
 /*

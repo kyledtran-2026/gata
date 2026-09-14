@@ -12,35 +12,35 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
-public interface IngestRepository extends JpaRepository<Ingest, String> {
+public interface IngestionRepository extends JpaRepository<Ingestion, String> {
 
-    @Query(value = "SELECT MIN(ingested_at) FROM gata_ingest", nativeQuery = true)
+    @Query(value = "SELECT MIN(ingested_at) FROM gata_ingestion", nativeQuery = true)
     LocalDateTime getEarliestIngestedDate();
 
-    @Query(value = "SELECT MAX(ingested_at) FROM gata_ingest", nativeQuery = true)
+    @Query(value = "SELECT MAX(ingested_at) FROM gata_ingestion", nativeQuery = true)
     LocalDateTime getLatestIngestedDate();
 
-    @Query(value = "SELECT * FROM gata_ingest WHERE ingest_status = :status", nativeQuery = true)
-    List<Ingest> getIngestsByStatus(@Param("status") int status);
+    @Query(value = "SELECT * FROM gata_ingestion WHERE status = :status", nativeQuery = true)
+    List<Ingestion> getProcessByStatus(@Param("status") int status);
 
-    @Query(value = "SELECT * FROM gata_ingest WHERE filename = :filename", nativeQuery = true)
-    Ingest getIngestByFilename(@Param("filename") String filename);
-
-    @Modifying
-    @Transactional
-    @Query(value="INSERT INTO gata_ingest (filename, ingest_src) VALUES (:filename, :ingestSrc)", nativeQuery = true)
-    void addIngest(@Param("filename") String filename, @Param("ingestSrc") int ingestSrc);
+    @Query(value = "SELECT * FROM gata_ingestion WHERE filename = :filename", nativeQuery = true)
+    Ingestion getProcessByFilename(@Param("filename") String filename);
 
     @Modifying
     @Transactional
-    @Query(value="DELETE FROM gata_ingest WHERE filename=:filename", nativeQuery = true)
-    void deleteIngest(@Param("filename") String filename);
+    @Query(value="INSERT INTO gata_ingestion (filename, ingest_src) VALUES (:filename, :ingestSrc)", nativeQuery = true)
+    void addPipeline(@Param("filename") String filename, @Param("ingestSrc") int ingestSrc);
+
+    @Modifying
+    @Transactional
+    @Query(value="DELETE FROM gata_ingestion WHERE filename=:filename", nativeQuery = true)
+    void deletePipeline(@Param("filename") String filename);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Transactional
     @Query(value = """
-    UPDATE gata_ingest
-       SET ingest_status  = :ingestStatus,
+    UPDATE gata_ingestion
+       SET status  = :status,
            ingest_src     = :ingestSrc,
            failure_reason = :failureReason,
            s3_folder      = :s3Folder,
@@ -49,7 +49,7 @@ public interface IngestRepository extends JpaRepository<Ingest, String> {
     """, nativeQuery = true)
     int updateIngest(
             @Param("filename") String filename,
-            @Param("ingestStatus") int ingestStatus,
+            @Param("status") int status,
             @Param("ingestSrc") int ingestSrc,
             @Param("failureReason") String failureReason,
             @Param("s3Folder") String s3Folder,

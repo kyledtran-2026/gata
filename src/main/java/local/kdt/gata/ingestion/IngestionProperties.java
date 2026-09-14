@@ -1,6 +1,5 @@
 package local.kdt.gata.ingestion;
 
-import local.kdt.gata.common.threadpool.ThreadPoolSettings;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -9,6 +8,5 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @Setter
 @ConfigurationProperties(prefix = "ingestion-service")
 public class IngestionProperties {
-    private String minioUploadFolder;
-    private String minioOutputFolder;
+    private String s3IngestFolder;
 }

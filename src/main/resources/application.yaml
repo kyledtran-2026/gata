@@ -54,11 +54,10 @@ app-thread-service:
   await-termination-in-sec: 60
 
 ingestion-service:
-  minio-upload-folder: upload
-  minio-output-folder: rag
+  s3-ingest-folder: ingest
 
 pipeline-service:
-  minio-pipeline-folder: rag
+  s3-rag-folder: rag
   thread-pool-settings:
     core-pool-size: 1
     max-pool-size: 1

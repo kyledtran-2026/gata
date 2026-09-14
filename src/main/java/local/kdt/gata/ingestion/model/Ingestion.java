@@ -10,12 +10,12 @@ import lombok.NoArgsConstructor;
 import java.time.Instant;
 
 @Entity
-@Table(name = "gata_ingest")
+@Table(name = "gata_ingestion")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Ingest {
+public class Ingestion {
 
     @Id
     @Column(name = "filename")
@@ -23,8 +23,8 @@ public class Ingest {
 
     @NotNull
     @Enumerated(EnumType.ORDINAL)
-    @Column(name = "ingest_status")
-    private IngestStatus ingestStatus = IngestStatus.INGESTED;
+    @Column(name = "status")
+    private IngestionStatus status = IngestionStatus.INGESTED;
 
     @Enumerated(EnumType.ORDINAL)
     @Column(name = "ingest_src")

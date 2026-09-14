@@ -1,9 +1,12 @@
 package local.kdt.gata.ingestion.model;
 
 import jakarta.persistence.EnumeratedValue;
+import jakarta.persistence.Table;
 
+// Should match gata_ingest_src table entry
+@Table(name="gata_ingest_src")
 public enum IngestSrc {
-    MINIO(1, "Minio Bucket"),
+    MINIO(1, "S3 Bucket"),
     REST(2, "REST API")
     ;
 

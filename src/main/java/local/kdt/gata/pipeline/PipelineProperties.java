@@ -9,6 +9,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @Setter
 @ConfigurationProperties(prefix = "pipeline-service")
 public class PipelineProperties {
-    private String minioPipelineFolder;
+    private String s3RagFolder;
     private ThreadPoolSettings threadPoolSettings;
 }

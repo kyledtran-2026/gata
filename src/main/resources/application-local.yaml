@@ -87,10 +87,10 @@ mineru-service:
   default-parse-method: auto
 
 ingestion-service:
-  minio-upload-folder: upload
-  minio-output-folder: rag
+  s3-ingest-folder: ingest
 
 pipeline-service:
+  s3-rag-folder: rag
   thread-pool-settings:
     core-pool-size: 1
     max-pool-size: 1
